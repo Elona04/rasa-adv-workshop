@@ -201,7 +201,8 @@ class OpenIncidentForm(FormAction):
         return [
             AllSlotsReset(),
             SlotSet("user_profile", user_profile),
-            SlotSet("user_name", user_profile.get("name"))
+            SlotSet("user_name", user_profile.get("name")),
+            SlotSet("user_email", user_profile.get("email"))
         ]
 
     async def submit(
