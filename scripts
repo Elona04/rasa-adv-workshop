@@ -1,0 +1,3 @@
+set VAULT_ADDR=http://127.0.0.1:8200
+set VAULT_TOKEN=s.zKxALm5uzpO6zA4Rh4VYjeNP
+vault kv put secret/snow_service user=admin pwd=04230719941004Ebese!! instance=https://dev64393.service-now.com
