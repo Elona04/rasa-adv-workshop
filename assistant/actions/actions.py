@@ -10,6 +10,7 @@ from actions.util import anonymous_profile
 logger = logging.getLogger(__name__)
 snow = SnowAPI()
 
+
 def get_user_id_from_event(tracker: Tracker) -> Text:
     """Pulls "session_started" event, if available, and 
        returns the userId from the channel's metadata.
@@ -24,6 +25,7 @@ def get_user_id_from_event(tracker: Tracker) -> Text:
         return metadata.get("userId", anonymous_profile.get("id"))
 
     return anonymous_profile.get("id")
+
 
 class ActionSessionStart(Action):
     def name(self) -> Text:
@@ -41,12 +43,14 @@ class ActionSessionStart(Action):
 
         user_profile = tracker.get_slot("user_profile")
         user_name = tracker.get_slot("user_name")
+        user_email = tracker.get_slot("user_email")
 
         if user_profile is None:
             id = get_user_id_from_event(tracker)
+            # id = "7682abf03710200044e0bfc8bcbe5d13"
             if id == anonymous_profile.get("id"):
                 user_profile = anonymous_profile
-            else:    
+            else:
                 # Make an actual call to Snow API.
                 user_profile = await snow.get_user_profile(id)
 
@@ -54,15 +58,15 @@ class ActionSessionStart(Action):
 
         if user_name is None:
             slots.append(SlotSet(key="user_name", value=user_profile.get("name")))
-
+        if user_email is None:
+            slots.append(SlotSet(key="user_email", value=user_profile.get("email")))
         return slots
 
-         
     async def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> List[EventType]:
 
         # the session should begin with a `session_started` event
@@ -78,15 +82,16 @@ class ActionSessionStart(Action):
 
         return events
 
+
 class IncidentStatus(Action):
     def name(self) -> Text:
         return "action_incident_status"
 
     async def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> List[EventType]:
         """Look up all incidents associated with email address
            and return status of each"""
@@ -115,6 +120,7 @@ class IncidentStatus(Action):
 
         dispatcher.utter_message(message)
         return []
+
 
 class OpenIncidentForm(FormAction):
     def name(self) -> Text:
@@ -176,11 +182,11 @@ class OpenIncidentForm(FormAction):
         }
 
     def validate_priority(
-        self,
-        value: Text,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            value: Text,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         """Validate priority is a valid value."""
 
@@ -190,19 +196,19 @@ class OpenIncidentForm(FormAction):
             dispatcher.utter_message(template="utter_no_priority")
             return {"priority": None}
 
-    def build_slot_sets(self, user_profile) -> List[Dict]:  
+    def build_slot_sets(self, user_profile) -> List[Dict]:
         """Helper method to build slot sets"""
         return [
             AllSlotsReset(),
             SlotSet("user_profile", user_profile),
             SlotSet("user_name", user_profile.get("name"))
-        ]   
+        ]
 
     async def submit(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+            self,
+            dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any],
     ) -> List[Dict]:
         """Create an incident and return the details"""
 
@@ -223,17 +229,19 @@ class OpenIncidentForm(FormAction):
                 "ticket for you. Appreciate your enthusiasm though :)"
             )
         else:
-            result = await snow.create_incident( 
-                user_profile.get("id"),           
+            result = await snow.create_incident(
+                user_profile.get("id"),
                 tracker.get_slot("incident_title"),
                 tracker.get_slot("problem_description"),
                 tracker.get_slot("priority")
             )
             incident_number = result.get("number")
+            user_email = tracker.get_slot("user_email")
             if incident_number:
                 message = (
                     f"Incident {incident_number} has been opened for you. "
-                    f"A support specialist will reach out to you soon."
+                    f"A support specialist will reach out to you soon to "
+                    f"the following mail address {user_email}."
                 )
             else:
                 message = (

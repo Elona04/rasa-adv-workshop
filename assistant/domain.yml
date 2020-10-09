@@ -22,7 +22,9 @@ slots:
   user_profile:
     type: unfeaturized
   user_name:
-    type: unfeaturized  
+    type: unfeaturized
+  user_email:
+    type: unfeaturized
   confirm:
     type: unfeaturized
   incident_title:
